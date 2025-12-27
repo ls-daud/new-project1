@@ -1,23 +1,20 @@
 Minta koding lengkap React Native, jadi ini aku kasih project skeleton yang bisa langsung kamu copy-paste (Android-only, tablet jadul friendly), dengan:
-- 2-step flow: Tambah barang -> Bayar & Cetak (uang pas)
-- Optional: Input uang (kembalian) via bottom sheet
-- Bluetooth ESC/POS 58mm generic pakai library react-native-thermal-receipt-printer-image-qr (punya API getDeviceList, connectPrinter, printBill, printColumnsText, dll).
-- Online-only API client (REST), dengan idempotency key biar tidak dobel transaksi
+	•	2-step flow: Tambah barang → Bayar & Cetak (uang pas)
+	•	Optional: Input uang (kembalian) via bottom sheet
+	•	Bluetooth ESC/POS 58mm generic pakai library react-native-thermal-receipt-printer-image-qr (punya API getDeviceList, connectPrinter, printBill, printColumnsText, dll).  ￼
+	•	Online-only API client (REST), dengan idempotency key biar tidak dobel transaksi
 
-Catatan realita: Bluetooth printing di RN itu tidak "tinggal import terus bahagia". Ini akan tetap butuh test di printer beneran, terutama tablet jadul. Tapi struktur di bawah ini sudah "waras" dan production-minded.
+Catatan realita: Bluetooth printing di RN itu tidak “tinggal import terus bahagia”. Ini akan tetap butuh test di printer beneran, terutama tablet jadul. Tapi struktur di bawah ini sudah “waras” dan production-minded.
 
-----
+⸻
 
 0) Setup Project (React Native CLI, bukan Expo)
 
-```bash
 npx react-native init KassirSimplePOS --template react-native-template-typescript
 cd KassirSimplePOS
-```
 
 Install dependencies:
 
-```bash
 yarn add @react-navigation/native @react-navigation/native-stack
 yarn add react-native-screens react-native-safe-area-context react-native-gesture-handler
 yarn add zustand axios
@@ -25,17 +22,15 @@ yarn add @shopify/flash-list
 yarn add @react-native-async-storage/async-storage
 yarn add react-native-thermal-receipt-printer-image-qr react-native-ping
 yarn add react-native-uuid
-```
 
 Android-only: pastikan MainActivity sudah setup gesture handler (template baru biasanya sudah).
 
-----
+⸻
 
 1) Android permissions (Bluetooth)
 
 Tambahkan di android/app/src/main/AndroidManifest.xml:
 
-```xml
 <manifest ...>
   <uses-permission android:name="android.permission.BLUETOOTH" />
   <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
@@ -49,17 +44,15 @@ Tambahkan di android/app/src/main/AndroidManifest.xml:
     ...
   </application>
 </manifest>
-```
 
-Android 12+ kadang minta runtime permission untuk scan/connect. Kalau tablet jadul kamu Android 8-10, biasanya lebih "longgar", tapi aman kalau disiapkan.
+Android 12+ kadang minta runtime permission untuk scan/connect. Kalau tablet jadul kamu Android 8–10, biasanya lebih “longgar”, tapi aman kalau disiapkan.
 
-----
+⸻
 
 2) Struktur Folder
 
 Bikin struktur ini:
 
-```
 src/
   api/
     client.ts
@@ -86,15 +79,14 @@ src/
   utils/
     debounce.ts
     money.ts
-```
 
-----
+
+⸻
 
 3) Konfigurasi API
 
 Buat file src/api/client.ts:
 
-```ts
 import axios from "axios";
 
 export const api = axios.create({
@@ -107,11 +99,9 @@ api.interceptors.request.use((config) => {
   config.headers["Content-Type"] = "application/json";
   return config;
 });
-```
 
 src/api/types.ts:
 
-```ts
 export type Product = {
   id: string;
   name: string;
@@ -154,15 +144,14 @@ export type TopProductRow = {
   qty: number;
   revenue: number;
 };
-```
 
-----
+
+⸻
 
 4) State Management (Zustand)
 
 src/store/cartStore.ts:
 
-```ts
 import { create } from "zustand";
 import type { CartLine } from "../api/types";
 
@@ -206,11 +195,9 @@ export const useCartStore = create<CartState>((set, get) => ({
   setNote: (note) => set({ note }),
   subtotal: () => get().lines.reduce((sum, l) => sum + l.unitPrice * l.qty, 0),
 }));
-```
 
 src/store/settingsStore.ts:
 
-```ts
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -239,17 +226,16 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     else await AsyncStorage.removeItem(KEY);
   },
 }));
-```
 
-----
+
+⸻
 
 5) Printer Service (ESC/POS)
 
-Kita pakai react-native-thermal-receipt-printer-image-qr. API utamanya ada getDeviceList, connectPrinter, printBill, printColumnsText.
+Kita pakai react-native-thermal-receipt-printer-image-qr. API utamanya ada getDeviceList, connectPrinter, printBill, printColumnsText.  ￼
 
 src/printers/printer.ts:
 
-```ts
 import { Printer } from "react-native-thermal-receipt-printer-image-qr";
 
 export type BtDevice = { name: string; address: string };
@@ -274,11 +260,9 @@ export async function connectBluetoothPrinter(address: string): Promise<void> {
   if (!address) throw new Error("Printer address is empty");
   return;
 }
-```
 
 src/printers/receipt.ts:
 
-```ts
 import { Printer, ColumnAlignment, COMMANDS } from "react-native-thermal-receipt-printer-image-qr";
 import type { TransactionCreateResponse, CartLine } from "../api/types";
 import { formatRupiah } from "../utils/money";
@@ -300,15 +284,14 @@ export async function printReceipt58mm(params: {
   const header = `${CENTER}${BOLD_ON}${storeName}${BOLD_OFF}${NEWLINE}${CENTER}Receipt: ${tx.receiptNo}${NEWLINE}${CENTER}${new Date(tx.createdAt).toLocaleString()}${NEWLINE}${NEWLINE}`;
   Printer.printText(header);
 
-  // 58mm sekitar 30 char; cek juga README library:
-  // https://github.com/thiendangit/react-native-thermal-receipt-printer-image-qr
+  // 58mm => sekitar 30 char; library contoh kolom 58mm = 30  [oai_citation:2‡GitHub](https://github.com/thiendangit/react-native-thermal-receipt-printer-image-qr)
   const colAlign = [ColumnAlignment.LEFT, ColumnAlignment.CENTER, ColumnAlignment.RIGHT] as any;
   const colWidth = [18, 4, 8]; // total 30
 
   Printer.printColumnsText(["Item", "Qty", "Rp"], colWidth, colAlign, [`${BOLD_ON}`, "", ""], {});
 
   lines.forEach((l) => {
-    const name = l.name.length > 18 ? l.name.slice(0, 17) + "..." : l.name;
+    const name = l.name.length > 18 ? l.name.slice(0, 17) + "…" : l.name;
     Printer.printColumnsText(
       [name, String(l.qty), formatRupiah(l.unitPrice * l.qty)],
       colWidth,
@@ -327,24 +310,21 @@ export async function printReceipt58mm(params: {
 
   Printer.printBill(`${CENTER}${NEWLINE}Terima kasih${NEWLINE}${NEWLINE}`);
 }
-```
 
-----
+
+⸻
 
 6) Utils
 
 src/utils/money.ts:
 
-```ts
 export function formatRupiah(v: number): string {
   const n = Math.round(v);
   return n.toLocaleString("id-ID");
 }
-```
 
 src/utils/debounce.ts:
 
-```ts
 export function debounce<T extends (...args: any[]) => void>(fn: T, ms: number) {
   let t: any;
   return (...args: Parameters<T>) => {
@@ -352,15 +332,14 @@ export function debounce<T extends (...args: any[]) => void>(fn: T, ms: number) 
     t = setTimeout(() => fn(...args), ms);
   };
 }
-```
 
-----
+
+⸻
 
 7) UI Components
 
 src/components/PrimaryButton.tsx:
 
-```ts
 import React from "react";
 import { Pressable, Text, StyleSheet, ViewStyle } from "react-native";
 
@@ -386,18 +365,16 @@ const styles = StyleSheet.create({
   btnDisabled: { opacity: 0.5 },
   txt: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });
-```
 
 src/components/PrinterStatusPill.tsx:
 
-```ts
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 
 export function PrinterStatusPill(props: { connected: boolean }) {
   return (
     <View style={[styles.pill, props.connected ? styles.ok : styles.bad]}>
-      <Text style={styles.text}>{props.connected ? "Printer: *" : "Printer: o"}</Text>
+      <Text style={styles.text}>{props.connected ? "Printer: ●" : "Printer: ○"}</Text>
     </View>
   );
 }
@@ -408,11 +385,9 @@ const styles = StyleSheet.create({
   bad: { backgroundColor: "#fdecec" },
   text: { fontWeight: "700" },
 });
-```
 
 src/components/ProductTile.tsx:
 
-```ts
 import React from "react";
 import { Pressable, Text, StyleSheet, View } from "react-native";
 import type { Product } from "../api/types";
@@ -439,11 +414,9 @@ const styles = StyleSheet.create({
   name: { fontSize: 14, fontWeight: "700", color: "#111" },
   price: { fontSize: 13, fontWeight: "700", color: "#111" },
 });
-```
 
 src/components/CartItemRow.tsx:
 
-```ts
 import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import type { CartLine } from "../api/types";
@@ -487,15 +460,14 @@ const styles = StyleSheet.create({
   remove: { marginLeft: 10, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: "#fdecec" },
   removeTxt: { fontWeight: "800", color: "#a00" },
 });
-```
 
-----
+
+⸻
 
 8) Navigation
 
 src/navigation/AppNavigator.tsx:
 
-```ts
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -525,11 +497,9 @@ export function AppNavigator() {
     </NavigationContainer>
   );
 }
-```
 
 App.tsx:
 
-```ts
 import React, { useEffect } from "react";
 import { AppNavigator } from "./src/navigation/AppNavigator";
 import { useSettingsStore } from "./src/store/settingsStore";
@@ -543,15 +513,14 @@ export default function App() {
 
   return <AppNavigator />;
 }
-```
 
-----
+
+⸻
 
 9) Screen: Printer Setup (pilih default printer)
 
 src/screens/PrinterSetupScreen.tsx:
 
-```ts
 import React, { useEffect, useState } from "react";
 import { View, Text, Pressable, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { listBluetoothDevices } from "../printers/printer";
@@ -629,15 +598,14 @@ const styles = StyleSheet.create({
   addr: { color: "#555", marginTop: 4, fontSize: 12 },
   badge: { marginTop: 6, fontWeight: "900" },
 });
-```
 
-----
+
+⸻
 
 10) Screen: Sale (inti 2-step)
 
 src/screens/SaleScreen.tsx:
 
-```ts
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, TextInput, StyleSheet, Pressable, Alert, Modal } from "react-native";
 import { FlashList } from "@shopify/flash-list";
@@ -736,7 +704,7 @@ export function SaleScreen() {
 
     setSubmitting(true);
     try {
-      // 1) Create transaction on server (online-only -> print after ack)
+      // 1) Create transaction on server (online-only => print after ack)
       const tx = await createTx(paidAmount);
 
       // 2) Print
@@ -996,15 +964,14 @@ const styles = StyleSheet.create({
   moneyInput: { width: 160, backgroundColor: "#f2f2f2", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, textAlign: "right", fontWeight: "900" },
   quickCash: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: "#f2f2f2" },
 });
-```
 
-----
+
+⸻
 
 11) Screen: History (untuk reprint)
 
 src/screens/HistoryScreen.tsx (simple, fetch list terakhir):
 
-```ts
 import React, { useEffect, useState } from "react";
 import { View, Text, Pressable, StyleSheet, Alert } from "react-native";
 import { FlashList } from "@shopify/flash-list";
@@ -1097,15 +1064,14 @@ const styles = StyleSheet.create({
   btn: { marginTop: 10, paddingVertical: 12, borderRadius: 12, backgroundColor: "#111", alignItems: "center" },
   btnTxt: { color: "#fff", fontWeight: "900" },
 });
-```
 
-----
+
+⸻
 
 12) Screen: Report Produk Terjual
 
 src/screens/ReportScreen.tsx:
 
-```ts
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Pressable, Alert } from "react-native";
 import { FlashList } from "@shopify/flash-list";
@@ -1171,33 +1137,34 @@ const styles = StyleSheet.create({
   name: { fontWeight: "900", fontSize: 15 },
   meta: { marginTop: 6, color: "#555" },
 });
-```
 
-----
+
+⸻
 
 13) Jalankan
 
-```bash
 yarn android
-```
 
-----
+
+⸻
 
 14) Kontrak Backend yang diasumsikan (biar RN jalan)
 
 RN code di atas mengasumsikan endpoint:
-- GET /products?search=&limit=
-- POST /transactions (create transaksi + items)
-- GET /transactions?limit=
-- GET /reports/top-products?start=&end=&granularity=
+	•	GET /products?search=&limit=
+	•	POST /transactions (create transaksi + items)
+	•	GET /transactions?limit=
+	•	GET /reports/top-products?start=&end=&granularity=
 
-Kalau backend kamu belum ada, bilang aja kamu mau backend pakai Supabase atau Express dan aku bikinin sekalian. Tapi kamu tadi minta "koding RN lengkap", jadi aku berhenti di sini biar kamu tidak tenggelam.
+Kalau backend kamu belum ada, bilang aja kamu mau backend pakai Supabase atau Express dan aku bikinin sekalian. Tapi kamu tadi minta “koding RN lengkap”, jadi aku berhenti di sini biar kamu tidak tenggelam.
 
-----
+⸻
 
 Kenapa aku pilih library ini?
 
-Karena README-nya jelas dan ada API untuk print text/bill/columns dan mention 58mm sekitar 30 char, jadi cocok buat struk standar. Walau ya... issue list-nya juga menunjukkan "hidup itu tidak sempurna" untuk printer thermal di RN, jadi kamu tetap harus tes di device/printer kamu.
+Karena readme-nya jelas dan ada API untuk print text/bill/columns dan mention 58mm ~ 30 char, jadi cocok buat struk standar.  ￼
+Walau ya… issue list-nya juga menunjukkan “hidup itu tidak sempurna” untuk printer thermal di RN, jadi kamu tetap harus tes di device/printer kamu.  ￼
 
-----
+⸻
 
+Kalau kamu kirim format JSON produk yang ada di backend kamu (atau schema DB yang kamu pilih), aku bisa sesuaikan mapping endpoint supaya plug-and-play tanpa kamu mikir.

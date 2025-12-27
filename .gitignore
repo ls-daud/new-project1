@@ -1,0 +1,14 @@
+# Local caches
+.npm-cache/
+*.log
+
+# React Native project artifacts (project has its own .gitignore too)
+KassirSimplePOS/node_modules/
+KassirSimplePOS/android/.gradle/
+KassirSimplePOS/android/app/build/
+KassirSimplePOS/ios/Pods/
+KassirSimplePOS/ios/build/
+KassirSimplePOS/.bundle/
+
+# OS junk
+.DS_Store
