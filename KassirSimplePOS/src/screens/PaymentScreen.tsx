@@ -118,8 +118,14 @@ export function PaymentScreen() {
       status: "pending" as const,
     };
 
-    await addTransaction(localTx);
-    await decrementStockByItems(localTx.items);
+    try {
+      await addTransaction(localTx);
+      await decrementStockByItems(localTx.items);
+    } catch (e: any) {
+      Alert.alert("Gagal", e?.message ?? "Gagal menyimpan transaksi.");
+      return;
+    }
+
     clear();
     syncPendingTransactions();
     setShowReceipt(false);
