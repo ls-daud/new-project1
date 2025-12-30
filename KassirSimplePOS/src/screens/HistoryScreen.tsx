@@ -1,13 +1,18 @@
 import React, { useState } from "react";
 import { View, Text, Pressable, StyleSheet, Alert } from "react-native";
 import { FlashList } from "@shopify/flash-list";
+import { useNavigation } from "@react-navigation/native";
 import { printReceipt58mm } from "../printers/receipt";
+import { connectBluetoothPrinter } from "../printers/printer";
 import { useDataStore } from "../store/dataStore";
+import { useSettingsStore } from "../store/settingsStore";
 import { BottomNav } from "../components/BottomNav";
 
 export function HistoryScreen() {
+  const nav = useNavigation<any>();
   const rows = useDataStore((s) => s.transactions);
   const syncPendingTransactions = useDataStore((s) => s.syncPendingTransactions);
+  const defaultPrinter = useSettingsStore((s) => s.defaultPrinter);
   const [loading, setLoading] = useState(false);
 
   const onSync = async () => {
@@ -37,6 +42,15 @@ export function HistoryScreen() {
               <Pressable
                 onPress={async () => {
                   try {
+                    const printerAddress = defaultPrinter?.address;
+                    if (!printerAddress) {
+                      Alert.alert("Printer belum diset", "Set default printer dulu di Setting Printer.", [
+                        { text: "Batal" },
+                        { text: "Setting Printer", onPress: () => nav.navigate("PrinterSetup") },
+                      ]);
+                      return;
+                    }
+                    await connectBluetoothPrinter(printerAddress);
                     const tx = {
                       id: item.remoteId ?? item.localId,
                       receiptNo: item.receiptNo,

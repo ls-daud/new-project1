@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable, Alert, ActivityIndicator, ScrollView
 import { useRoute, useNavigation } from "@react-navigation/native";
 
 import { printReceipt58mm } from "../printers/receipt";
-import { listBluetoothDevices } from "../printers/printer";
+import { connectBluetoothPrinter, listBluetoothDevices } from "../printers/printer";
 import { useSettingsStore } from "../store/settingsStore";
 import { useDataStore } from "../store/dataStore";
 import { formatRupiah } from "../utils/money";
@@ -65,6 +65,7 @@ export function ReceiptScreen() {
     }
     await setDefaultPrinter({ name: devices.find((d) => d.address === selected)?.name ?? "Printer", address: selected });
     try {
+      await connectBluetoothPrinter(selected);
       const txForPrint = {
         id: tx.remoteId ?? tx.localId,
         receiptNo: tx.receiptNo,

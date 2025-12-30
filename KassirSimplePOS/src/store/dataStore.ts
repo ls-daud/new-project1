@@ -18,12 +18,26 @@ export type LocalTransaction = {
   remoteId?: string;
 };
 
+export type StockChange = {
+  id: string;
+  productId: string;
+  productName: string;
+  fromStock: number;
+  toStock: number;
+  delta: number;
+  reason?: string;
+  photoUri?: string;
+  createdAt: string;
+};
+
 type DataState = {
   products: Product[];
   transactions: LocalTransaction[];
+  stockChanges: StockChange[];
   hydrated: boolean;
   hydrate: () => Promise<void>;
   setProducts: (products: Product[]) => Promise<void>;
+  addStockChanges: (changes: StockChange[]) => Promise<void>;
   addTransaction: (tx: LocalTransaction) => Promise<void>;
   updateTransaction: (localId: string, patch: Partial<LocalTransaction>) => Promise<void>;
   decrementStockByItems: (items: CartLine[]) => Promise<void>;
@@ -32,14 +46,15 @@ type DataState = {
 
 const PRODUCTS_KEY = "local.products.v1";
 const TX_KEY = "local.transactions.v1";
+const STOCK_CHANGES_KEY = "local.stockChanges.v1";
 
 const seedProducts: Product[] = [
-  { id: "p1", name: "Indomie", price: 20000, stock: 24 },
-  { id: "p2", name: "Sedang Jahe", price: 15000, stock: 18 },
-  { id: "p3", name: "Teh Manis", price: 8000, stock: 30 },
-  { id: "p4", name: "Kopi Hitam", price: 12000, stock: 14 },
-  { id: "p5", name: "Air Mineral", price: 5000, stock: 40 },
-  { id: "p6", name: "Roti Bakar", price: 18000, stock: 10 },
+  { id: "p1", name: "Indomie", price: 20000, stock: 24, photoUri: "" },
+  { id: "p2", name: "Sedang Jahe", price: 15000, stock: 18, photoUri: "" },
+  { id: "p3", name: "Teh Manis", price: 8000, stock: 30, photoUri: "" },
+  { id: "p4", name: "Kopi Hitam", price: 12000, stock: 14, photoUri: "" },
+  { id: "p5", name: "Air Mineral", price: 5000, stock: 40, photoUri: "" },
+  { id: "p6", name: "Roti Bakar", price: 18000, stock: 10, photoUri: "" },
 ];
 
 async function loadJson<T>(key: string, fallback: T): Promise<T> {
@@ -55,26 +70,34 @@ async function loadJson<T>(key: string, fallback: T): Promise<T> {
 export const useDataStore = create<DataState>((set, get) => ({
   products: [],
   transactions: [],
+  stockChanges: [],
   hydrated: false,
   hydrate: async () => {
     const products = (await loadJson<Product[]>(PRODUCTS_KEY, seedProducts)).map((p) => ({
       ...p,
       stock: typeof p.stock === "number" ? p.stock : 0,
+      photoUri: typeof p.photoUri === "string" ? p.photoUri : "",
     }));
     const transactions = (await loadJson<LocalTransaction[]>(TX_KEY, [])).map((tx) => ({
       paymentMethod: "CASH",
       ...tx,
     }));
+    const stockChanges = await loadJson<StockChange[]>(STOCK_CHANGES_KEY, []);
     if (products.length === 0) {
       await AsyncStorage.setItem(PRODUCTS_KEY, JSON.stringify(seedProducts));
-      set({ products: seedProducts, transactions, hydrated: true });
+      set({ products: seedProducts, transactions, stockChanges, hydrated: true });
       return;
     }
-    set({ products, transactions, hydrated: true });
+    set({ products, transactions, stockChanges, hydrated: true });
   },
   setProducts: async (products) => {
     set({ products });
     await AsyncStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
+  },
+  addStockChanges: async (changes) => {
+    const next = [...changes, ...get().stockChanges];
+    set({ stockChanges: next });
+    await AsyncStorage.setItem(STOCK_CHANGES_KEY, JSON.stringify(next));
   },
   addTransaction: async (tx) => {
     const next = [tx, ...get().transactions];

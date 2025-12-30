@@ -5,6 +5,7 @@ export type Product = {
   category?: string | null;
   isActive?: boolean;
   stock?: number;
+  photoUri?: string;
 };
 
 export type CartLine = {

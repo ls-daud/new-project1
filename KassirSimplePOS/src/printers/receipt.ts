@@ -1,4 +1,4 @@
-import { Printer, ColumnAlignment, COMMANDS } from "react-native-thermal-receipt-printer-image-qr";
+import { BLEPrinter, ColumnAlignment, COMMANDS } from "react-native-thermal-receipt-printer-image-qr";
 import type { TransactionCreateResponse, CartLine } from "../api/types";
 import { formatRupiah } from "../utils/money";
 
@@ -20,16 +20,16 @@ export async function printReceipt58mm(params: {
     `${CENTER}${BOLD_ON}${storeName}${BOLD_OFF}${NEWLINE}` +
     `${CENTER}Receipt: ${tx.receiptNo}${NEWLINE}` +
     `${CENTER}${new Date(tx.createdAt).toLocaleString()}${NEWLINE}${NEWLINE}`;
-  Printer.printText(header);
+  BLEPrinter.printText(header);
 
   const colAlign = [ColumnAlignment.LEFT, ColumnAlignment.CENTER, ColumnAlignment.RIGHT] as any;
   const colWidth = [18, 4, 8]; // total 30 chars
 
-  Printer.printColumnsText(["Item", "Qty", "Rp"], colWidth, colAlign, [`${BOLD_ON}`, "", ""], {});
+  BLEPrinter.printColumnsText(["Item", "Qty", "Rp"], colWidth, colAlign, [`${BOLD_ON}`, "", ""], {});
 
   lines.forEach((l) => {
     const name = l.name.length > 18 ? `${l.name.slice(0, 17)}...` : l.name;
-    Printer.printColumnsText(
+    BLEPrinter.printColumnsText(
       [name, String(l.qty), formatRupiah(l.unitPrice * l.qty)],
       colWidth,
       colAlign,
@@ -38,16 +38,16 @@ export async function printReceipt58mm(params: {
     );
   });
 
-  Printer.printText(`${LEFT}${NEWLINE}`);
+  BLEPrinter.printText(`${LEFT}${NEWLINE}`);
   const methodLabel = tx.paymentMethod === "QRIS" ? "QRIS" : "Tunai";
-  Printer.printText(`${LEFT}METODE : ${methodLabel}${NEWLINE}`);
-  Printer.printText(`${LEFT}TOTAL  : ${formatRupiah(tx.totalAmount)}${NEWLINE}`);
-  Printer.printText(`${LEFT}BAYAR  : ${formatRupiah(tx.paidAmount)}${NEWLINE}`);
-  Printer.printText(`${LEFT}KEMBALI: ${formatRupiah(tx.changeAmount)}${NEWLINE}`);
+  BLEPrinter.printText(`${LEFT}METODE : ${methodLabel}${NEWLINE}`);
+  BLEPrinter.printText(`${LEFT}TOTAL  : ${formatRupiah(tx.totalAmount)}${NEWLINE}`);
+  BLEPrinter.printText(`${LEFT}BAYAR  : ${formatRupiah(tx.paidAmount)}${NEWLINE}`);
+  BLEPrinter.printText(`${LEFT}KEMBALI: ${formatRupiah(tx.changeAmount)}${NEWLINE}`);
 
   if (note?.trim()) {
-    Printer.printText(`${LEFT}${NEWLINE}Catatan: ${note.trim()}${NEWLINE}`);
+    BLEPrinter.printText(`${LEFT}${NEWLINE}Catatan: ${note.trim()}${NEWLINE}`);
   }
 
-  Printer.printBill(`${CENTER}${NEWLINE}Terima kasih${NEWLINE}${NEWLINE}`);
+  BLEPrinter.printBill(`${CENTER}${NEWLINE}Terima kasih${NEWLINE}${NEWLINE}`);
 }

@@ -32,11 +32,39 @@ target 'KassirSimplePOS' do
       # :ccache_enabled => true
     )
 
-    # Ensure pods build for x86_64 on simulator to avoid arm64 device slices
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
-        config.build_settings['ARCHS[sdk=iphonesimulator*]'] = 'x86_64'
+    # Use default simulator architectures on Apple silicon
+    installer.aggregate_targets.each do |aggregate_target|
+      next unless aggregate_target.name == 'Pods-KassirSimplePOS'
+
+      aggregate_target.xcconfigs.each_key do |config_name|
+        xcconfig_path = aggregate_target.xcconfig_path(config_name)
+        next unless File.exist?(xcconfig_path)
+
+        contents = File.read(xcconfig_path)
+        printer_lib = '-l"PrinterSDK"'
+        printer_path = '"${PODS_ROOT}/../../node_modules/react-native-thermal-receipt-printer-image-qr/ios/PrinterSDK"'
+
+        contents = contents.gsub(printer_lib, '').gsub(printer_path, '')
+
+        base_flags = contents[/^OTHER_LDFLAGS = (.*)$/, 1]
+        if base_flags
+          base_flags = base_flags.gsub(/\s+/, ' ').strip
+          contents = contents.gsub(/^OTHER_LDFLAGS = .*$/, "OTHER_LDFLAGS = #{base_flags}")
+          unless contents.include?('OTHER_LDFLAGS[sdk=iphoneos*]')
+            contents << "\nOTHER_LDFLAGS[sdk=iphoneos*] = #{base_flags} #{printer_lib}\n"
+          end
+        end
+
+        base_paths = contents[/^LIBRARY_SEARCH_PATHS = (.*)$/, 1]
+        if base_paths
+          base_paths = base_paths.gsub(/\s+/, ' ').strip
+          contents = contents.gsub(/^LIBRARY_SEARCH_PATHS = .*$/, "LIBRARY_SEARCH_PATHS = #{base_paths}")
+          unless contents.include?('LIBRARY_SEARCH_PATHS[sdk=iphoneos*]')
+            contents << "\nLIBRARY_SEARCH_PATHS[sdk=iphoneos*] = #{base_paths} #{printer_path}\n"
+          end
+        end
+
+        File.write(xcconfig_path, contents)
       end
     end
   end

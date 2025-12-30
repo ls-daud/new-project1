@@ -5,6 +5,7 @@ import { SaleScreen } from "../screens/SaleScreen";
 import { PaymentScreen } from "../screens/PaymentScreen";
 import { ReceiptScreen } from "../screens/ReceiptScreen";
 import { StockScreen } from "../screens/StockScreen";
+import { StockDetailScreen } from "../screens/StockDetailScreen";
 import { ReportScreen } from "../screens/ReportScreen";
 import { HistoryScreen } from "../screens/HistoryScreen";
 import { PrinterSetupScreen } from "../screens/PrinterSetupScreen";
@@ -15,6 +16,7 @@ export type RootStackParamList = {
   Payment: undefined;
   Receipt: { localId: string };
   Stock: undefined;
+  StockDetail: { productId: string };
   Report: undefined;
   History: undefined;
   PrinterSetup: undefined;
@@ -41,6 +43,11 @@ export function AppNavigator() {
         <Stack.Screen name="Payment" component={PaymentScreen} options={{ title: "Pembayaran" }} />
         <Stack.Screen name="Receipt" component={ReceiptScreen} options={{ title: "Struk" }} />
         <Stack.Screen name="Stock" component={StockScreen} options={{ title: "Stok" }} />
+        <Stack.Screen
+          name="StockDetail"
+          component={StockDetailScreen}
+          options={{ title: "Detail Stok" }}
+        />
         <Stack.Screen name="Report" component={ReportScreen} options={{ title: "Produk Terjual" }} />
         <Stack.Screen name="History" component={HistoryScreen} options={{ title: "Riwayat" }} />
         <Stack.Screen

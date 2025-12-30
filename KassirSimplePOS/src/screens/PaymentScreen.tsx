@@ -17,6 +17,7 @@ import { useCartStore } from "../store/cartStore";
 import { useDataStore } from "../store/dataStore";
 import { useSettingsStore } from "../store/settingsStore";
 import { formatRupiah } from "../utils/money";
+import { connectBluetoothPrinter } from "../printers/printer";
 import { printReceipt58mm } from "../printers/receipt";
 
 const STORE_NAME = "Kedai jamu dan wedang rempah Sanjaya";
@@ -132,7 +133,8 @@ export function PaymentScreen() {
     nav.navigate("Sale");
 
     if (!withPrint) return;
-    if (!defaultPrinter?.address) {
+    const printerAddress = defaultPrinter?.address;
+    if (!printerAddress) {
       Alert.alert("Printer belum diset", "Set default printer dulu di Setting Printer.", [
         { text: "Batal" },
         { text: "Setting Printer", onPress: () => nav.navigate("PrinterSetup") },
@@ -141,6 +143,7 @@ export function PaymentScreen() {
     }
 
     try {
+      await connectBluetoothPrinter(printerAddress);
       const txForPrint = {
         id: localTx.localId,
         receiptNo: localTx.receiptNo,
