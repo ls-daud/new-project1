@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, TextInput, StyleSheet, Pressable, Alert } from "react-native";
+import { View, Text, TextInput, StyleSheet, Pressable, Alert, RefreshControl, ScrollView } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { useNavigation } from "@react-navigation/native";
 
@@ -30,8 +30,12 @@ export function SaleScreen() {
   const defaultPrinter = useSettingsStore((s) => s.defaultPrinter);
   const products = useDataStore((s) => s.products);
   const hydrated = useDataStore((s) => s.hydrated);
+  const hydrate = useDataStore((s) => s.hydrate);
+  const clearLocalCache = useDataStore((s) => s.clearLocalCache);
+  const syncPendingTransactions = useDataStore((s) => s.syncPendingTransactions);
 
   const [query, setQuery] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   const total = subtotal();
   const printerConnected = !!defaultPrinter?.address;
@@ -48,6 +52,41 @@ export function SaleScreen() {
       return;
     }
     nav.navigate("Payment");
+  };
+
+  const onRefresh = async () => {
+    console.log("[SaleScreen] Starting refresh...");
+    setRefreshing(true);
+    try {
+      await syncPendingTransactions();
+      await hydrate();
+      console.log("[SaleScreen] Refresh completed successfully");
+    } catch (e: any) {
+      console.log("[SaleScreen] Refresh failed:", e?.message);
+      const errorMsg = e?.message ?? "Tidak bisa sync data.";
+      Alert.alert(
+        "Sync gagal",
+        `${errorMsg}\n\nData lokal masih ditampilkan. Ingin hapus cache lokal dan coba lagi?`,
+        [
+          { text: "Batal", style: "cancel" },
+          {
+            text: "Hapus Cache",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await clearLocalCache();
+                await hydrate();
+                Alert.alert("Berhasil", "Cache lokal sudah dihapus dan data di-refresh.");
+              } catch (err: any) {
+                Alert.alert("Error", err?.message ?? "Gagal menghapus cache.");
+              }
+            },
+          },
+        ]
+      );
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   return (
@@ -74,6 +113,16 @@ export function SaleScreen() {
             keyExtractor={(p) => p.id}
             numColumns={3}
             estimatedItemSize={100}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={["#e23c33"]}
+                tintColor="#e23c33"
+                title={refreshing ? "Memuat data..." : "Tarik untuk refresh"}
+                titleColor="#666"
+              />
+            }
             renderItem={({ item }) => (
               <View style={styles.tileWrap}>
                 <ProductTile
@@ -85,7 +134,13 @@ export function SaleScreen() {
             ListHeaderComponent={
               <Text style={styles.sectionTitle}>{hydrated ? "Produk" : "Loading..."}</Text>
             }
-            ListEmptyComponent={<Text style={{ color: "#666", padding: 8 }}>Belum ada produk.</Text>}
+            ListEmptyComponent={
+              <View style={styles.emptyProducts}>
+                <Text style={styles.emptyIcon}>📦</Text>
+                <Text style={styles.emptyText}>Belum ada produk</Text>
+                <Text style={styles.emptyHint}>Tarik ke bawah untuk refresh</Text>
+              </View>
+            }
           />
         </View>
 
@@ -180,4 +235,13 @@ const styles = StyleSheet.create({
 
   secondaryBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: "#f2f2f2", alignItems: "center" },
   secondaryTxt: { fontWeight: "900", color: "#111" },
+
+  emptyProducts: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+  },
+  emptyIcon: { fontSize: 40, marginBottom: 12 },
+  emptyText: { fontSize: 16, fontWeight: "700", color: "#333", marginBottom: 4 },
+  emptyHint: { fontSize: 13, color: "#888" },
 });
